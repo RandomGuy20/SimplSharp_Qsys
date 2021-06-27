@@ -1,0 +1,225 @@
+/*******************************************************************************************
+  SIMPL+ Module Information
+  (Fill in comments below)
+*******************************************************************************************/
+/*
+Dealer Name:
+System Name:
+System Number:
+Programmer:
+Comments:
+*/
+
+/*******************************************************************************************
+  Compiler Directives
+  (Uncomment and declare compiler directives as needed)
+*******************************************************************************************/
+// #ENABLE_DYNAMIC
+#SYMBOL_NAME "QsysAESTXV3"
+// #HINT ""
+// #DEFINE_CONSTANT
+#CATEGORY "46" "JoshQsys" // Custom
+
+// #PRINT_TO_TRACE
+// #DIGITAL_EXPAND 
+// #ANALOG_SERIAL_EXPAND 
+// #OUTPUT_SHIFT 
+// #HELP_PDF_FILE ""
+#DEFAULT_VOLATILE
+#ENABLE_STACK_CHECKING
+#ENABLE_TRACE
+// #ENCODING_ASCII
+// #ENCODING_UTF16
+// #ENCODING_INHERIT_FROM_PARENT
+// #ENCODING_INHERIT_FROM_PROGRAM
+/*
+#HELP_BEGIN
+   Set Network Buffer = 0 - Default / 1 - 1ms / 2 - 2ms / 3 - 5ms
+   Set Network Interface = 0 is LAn A  -- 1 is LAn B
+#HELP_END
+*/
+
+/*******************************************************************************************
+  Include Libraries
+  (Uncomment and include additional libraries as needed)
+*******************************************************************************************/
+#includepath "E:\\Simpl#andPro\\Programs\\QsysV5\\QsysV5\\QsysV5\\bin\\Debug"
+#user_simplsharp_library "QsysV5"
+
+
+/*******************************************************************************************
+  DIGITAL, ANALOG and SERIAL INPUTS and OUTPUTS
+  (Uncomment and declare inputs and outputs as needed)
+*******************************************************************************************/
+
+digital_input Enable;
+digital_output Enabled_Fb,StreamOK,StreamInitializing,StreamCompromised,StreamMissing,StreamFault;
+
+analog_input _skip_,_skip_,_skip_,_skip_,_skip_,_skip_,SetNetworkBuff,SetNetworkInterface;
+analog_output _skip_,RXBuff_Fb,Interface_Fb;
+
+
+string_input _skip_,_skip_,SetStreamName[50],SetMulticast[50];
+string_output NetworkBufferFb,InterfaceName_Fb,StreamNameFb,MulticastFb;
+
+
+AES67SIMPL stream;
+/*******************************************************************************************
+  Parameters
+  (Uncomment and declare parameters as needed)
+*******************************************************************************************/
+
+ INTEGER_PARAMETER _skip_,_skip_,_skip_,_skip_,_skip_,_skip_,_skip_,_skip_,_skip_,_skip_,_skip_,_skip_,_skip_;
+ STRING_PARAMETER CoreID[20],GroupID[20],ComponentName[50];
+
+
+ integer ginetIface,giEnabled,giNetBuff;
+ string gsStream[50],gsName[50],gsMulticast[50],gsInterface[1][5],gsNetworkBuff[3][10];
+
+
+/*******************************************************************************************
+  Event Handlers
+  (Uncomment and declare additional event handlers as needed)
+*******************************************************************************************/
+
+release Enable
+{
+    stream.EnableStream();;
+}
+
+threadsafe change SetStreamName
+{
+    gsStream = SetStreamName;
+    stream.SetStreamName(gsStream);
+    gsStream = "";
+}
+
+threadsafe change SetNetworkBuff
+{
+    giNetBuff = SetNetworkBuff;
+    if(giNetBuff < 4)
+    {
+        stream.SetNetworkBuffer(giNetBuff);
+    }
+    giNetBuff = 0;
+}
+
+threadsafe change SetNetworkInterface
+{
+    ginetIface = SetNetworkInterface;
+    if(ginetIface < 2)
+    {
+        stream.SetNetInterface(ginetIface);
+    }
+    ginetIface = 0;
+}
+
+threadsafe change SetMulticast
+{
+    gsMulticast = SetMulticast;
+    stream.SetMulticast(gsMulticast);
+    gsMulticast = "";
+}
+
+
+callback function StatusTrigger(integer args)
+{
+    if(args = 1)
+    {
+        StreamOK = 1;
+        StreamInitializing = 0;
+        StreamCompromised = 0;
+        StreamMissing = 0;
+        StreamFault = 0;
+    }
+    else if(args = 2)
+    {
+        StreamOK = 0;
+        StreamInitializing = 1;
+        StreamCompromised = 0;
+        StreamMissing = 0;
+        StreamFault = 0;
+    }
+    else if(args = 3)
+    {
+        StreamOK = 0;
+        StreamInitializing = 0;
+        StreamCompromised = 1;
+        StreamMissing = 0;
+        StreamFault = 0;
+    }
+    else if(args = 4)
+    {
+        StreamOK = 0;
+        StreamInitializing = 0;
+        StreamCompromised = 0;
+        StreamMissing = 1;
+        StreamFault = 0;
+    }
+    else if(args = 5)
+    {
+        StreamOK = 0;
+        StreamInitializing = 0;
+        StreamCompromised = 0;
+        StreamMissing = 0;
+        StreamFault = 1;
+    }
+}
+
+callback function Enabletrigger(integer args)
+{
+    Enabled_Fb = args;
+}
+
+callback function Interfacetrigger(integer args)
+{
+    Interface_Fb = args;
+    InterfaceName_Fb = gsInterface[args];
+}
+
+callback function nametrigger(String args)
+{
+    StreamnameFb = args;
+}
+
+callback function BufferTrigger(integer args)
+{
+   RXBuff_Fb = args;
+   NetworkBufferFb = gsNetworkBuff[args];
+}
+
+callback function MulticastTrigger(string args)
+{
+    MulticastFb = args;
+}
+/*******************************************************************************************
+  Main()
+  Uncomment and place one-time startup code here
+  (This code will get called when the system starts up)
+*******************************************************************************************/
+
+Function Main()
+{
+
+    integer x;
+    WaitForInitializationComplete();
+
+
+    RegisterDelegate(stream, onStreamStatus, StatusTrigger);
+    RegisterDelegate(stream, onStreamEnable, Enabletrigger);
+    RegisterDelegate(stream, onStreamInterface, Interfacetrigger);
+    RegisterDelegate(stream, onStreamName, nametrigger);
+    RegisterDelegate(stream, onStreamNetworkBuffer, BufferTrigger);
+    RegisterDelegate(stream, onStreamMulticast, MulticastTrigger);
+    delay(20);
+    stream.Initialize(ComponentName,coreid,groupID,0);
+    gsInterface[0] = "LAN A";
+    gsInterface[1] = "LAN B";
+    gsNetworkBuff[0] = "Default";
+    gsNetworkBuff[1] = "Extra 1 MS";
+    gsNetworkBuff[2] = "Extra 2 MS";
+    gsNetworkBuff[3] = "Extra 5 MS";
+
+}
+
+

@@ -1,0 +1,132 @@
+/*******************************************************************************************
+  SIMPL+ Module Information
+  (Fill in comments below)
+*******************************************************************************************/
+/*
+Dealer Name:
+System Name:
+System Number:
+Programmer:
+Comments:
+*/
+
+/*******************************************************************************************
+  Compiler Directives
+  (Uncomment and declare compiler directives as needed)
+*******************************************************************************************/
+ #SYMBOL_NAME "QsysNamedControlBool_V1"
+ #CATEGORY "46" "DSPSuite" // Cust
+
+// #PRINT_TO_TRACE
+// #DIGITAL_EXPAND 
+// #ANALOG_SERIAL_EXPAND 
+// #OUTPUT_SHIFT 
+// #HELP_PDF_FILE ""
+#DEFAULT_VOLATILE
+#ENABLE_STACK_CHECKING
+#ENABLE_TRACE
+// #ENCODING_ASCII
+// #ENCODING_UTF16
+// #ENCODING_INHERIT_FROM_PARENT
+// #ENCODING_INHERIT_FROM_PROGRAM
+/*
+#HELP_BEGIN
+   Can do up to 10 Outputs and 10 inputs
+#HELP_END
+*/
+
+/*******************************************************************************************
+  Include Libraries
+  (Uncomment and include additional libraries as needed)
+*******************************************************************************************/
+#user_simplsharp_library "DSP_Suite"
+
+
+/*******************************************************************************************
+  DIGITAL, ANALOG and SERIAL INPUTS and OUTPUTS
+  (Uncomment and declare inputs and outputs as needed)
+*******************************************************************************************/
+ DIGITAL_INPUT Initialize,_skip_,StateOn,StateOff,StateToggle;
+// BUFFER_INPUT 
+
+ DIGITAL_OUTPUT _skip_,_skip_,StateOnFb,StateOffFb;
+
+
+
+/*******************************************************************************************
+  Parameters
+  (Uncomment and declare parameters as needed)
+*******************************************************************************************/
+
+ STRING_PARAMETER _skip_,_skip_,_skip_,_skip_,_skip_, 
+				  CoreID[20],GroupID[20],ComponentName[50];
+
+
+ string temp[60];
+
+ integer giVal;
+
+ NamedControlsSIMPL control;
+/*******************************************************************************************
+  Event Handlers
+  (Uncomment and declare additional event handlers as needed)
+*******************************************************************************************/
+push initialize
+{
+	control.Initialize(ComponentName,coreid,groupID,1);
+}    
+
+
+
+ release StateOn
+{
+
+    control.SetBool(1);
+}
+
+release StateOff
+{
+    control.SetBool(0);
+}
+
+release stateToggle
+{
+    if(giVal > 0)
+    {
+        control.SetBool(0);
+    }
+    else
+    {
+        control.SetBool(1);
+    }
+}
+
+
+callback function ControlChange(integer value, string sValue)
+{
+    giVal = value;
+    if(value > 0)
+    {
+        StateOnFb = 1;
+        StateOffFb = 0;
+    }
+    else
+    {
+        StateOnFb = 0;
+        StateOffFb = 1;
+    }
+}
+
+/*******************************************************************************************
+  Main()
+  Uncomment and place one-time startup code here
+  (This code will get called when the system starts up)
+*******************************************************************************************/
+
+Function Main()
+{
+    WaitForInitializationComplete();
+    RegisterDelegate(control, onNamedControl, ControlChange);
+}
+
+

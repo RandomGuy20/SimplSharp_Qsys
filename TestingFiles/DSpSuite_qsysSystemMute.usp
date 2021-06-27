@@ -1,0 +1,134 @@
+/*******************************************************************************************
+  SIMPL+ Module Information
+  (Fill in comments below)
+*******************************************************************************************/
+/*
+Dealer Name:
+System Name:
+System Number:
+Programmer:
+Comments:
+*/
+
+/*******************************************************************************************
+  Compiler Directives
+  (Uncomment and declare compiler directives as needed)
+*******************************************************************************************/
+ #SYMBOL_NAME "QsysSystemMute_V1"
+ #CATEGORY "46" "DSPSuite" // Cust
+// #PRINT_TO_TRACE
+// #DIGITAL_EXPAND 
+// #ANALOG_SERIAL_EXPAND 
+// #OUTPUT_SHIFT 
+// #HELP_PDF_FILE ""
+#DEFAULT_VOLATILE
+#ENABLE_STACK_CHECKING
+#ENABLE_TRACE
+// #ENCODING_ASCII
+// #ENCODING_UTF16
+// #ENCODING_INHERIT_FROM_PARENT
+// #ENCODING_INHERIT_FROM_PROGRAM
+/*
+#HELP_BEGIN
+   (add additional lines of help lines)
+#HELP_END
+*/
+
+/*******************************************************************************************
+  Include Libraries
+  (Uncomment and include additional libraries as needed)
+*******************************************************************************************/
+#user_simplsharp_library "DSP_Suite"
+
+/*******************************************************************************************
+  DIGITAL, ANALOG and SERIAL INPUTS and OUTPUTS
+  (Uncomment and declare inputs and outputs as needed)
+*******************************************************************************************/
+ DIGITAL_INPUT initialize,MuteSystem,unMuteSystem,MuteToggle;
+
+ DIGITAL_OUTPUT _skip_,SystemMuteFB;
+ ANALOG_OUTPUT SystemgainFB;
+
+
+/*******************************************************************************************
+  Parameters
+  (Uncomment and declare parameters as needed)
+*******************************************************************************************/
+
+ STRING_PARAMETER  _skip_,_skip_,_skip_,_skip_,CoreID[20],GroupID[20],ComponentName[50];
+ integer mute,gain;
+ 
+ SystemMuteSIMPL sysMute;
+/*******************************************************************************************
+  Event Handlers
+  (Uncomment and declare additional event handlers as needed)
+*******************************************************************************************/
+push initialize
+{
+	sysMute.Initialize(componentname,coreid,groupid);
+}
+
+
+
+ push MuteSystem
+{
+    if(mute = 0)
+    {
+        sysMute.MuteToggle(1);
+    }
+}
+
+push unMuteSystem
+{
+    if(mute = 1)
+    {
+        sysMute.MuteToggle(0);
+    }
+}
+
+push Mutetoggle
+{
+    if(mute = 0)
+    {
+        sysMute.MuteToggle(1);
+    }
+    else
+    {
+        sysMute.MuteToggle(0);
+    }
+}
+
+
+callback function gainChanged(integer gainLevel)
+{
+    gain = gainLevel;
+    SystemgainFB = gain;
+}
+
+callback function MuteChanged(integer mutevalue)
+{
+    mute = mutevalue;
+    if(mute = 1)
+    {
+        SystemMuteFB = 1;
+    }
+    else
+    {
+            SystemMuteFB = 0;
+    }
+}
+
+/*******************************************************************************************
+  Main()
+  Uncomment and place one-time startup code here
+  (This code will get called when the system starts up)
+*******************************************************************************************/
+
+Function Main()
+{
+    WaitForInitializationComplete();
+    RegisterDelegate(sysMute, onGainChange, gainChanged);
+    RegisterDelegate(sysMute, onSystemMute, MuteChanged);
+}
+
+

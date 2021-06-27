@@ -1,0 +1,126 @@
+/*******************************************************************************************
+  SIMPL+ Module Information
+  (Fill in comments below)
+*******************************************************************************************/
+/*
+Dealer Name:
+System Name:
+System Number:
+Programmer:
+Comments:
+*/
+
+/*******************************************************************************************
+  Compiler Directives
+  (Uncomment and declare compiler directives as needed)
+*******************************************************************************************/
+ #SYMBOL_NAME "QsysCamRouter_V1"
+ #CATEGORY "46" "DSPSuite" // Cust
+
+// #PRINT_TO_TRACE
+// #DIGITAL_EXPAND 
+#ANALOG_SERIAL_EXPAND InputsWithOutputs
+
+// #OUTPUT_SHIFT 
+// #HELP_PDF_FILE ""
+#DEFAULT_VOLATILE
+#ENABLE_STACK_CHECKING
+#ENABLE_TRACE
+// #ENCODING_ASCII
+// #ENCODING_UTF16
+// #ENCODING_INHERIT_FROM_PARENT
+// #ENCODING_INHERIT_FROM_PROGRAM
+
+#HELP_BEGIN
+   This can be exapnded for up to 32 outputs/inputs
+#HELP_END
+
+/*******************************************************************************************
+  Include Libraries
+  (Uncomment and include additional libraries as needed)
+*******************************************************************************************/
+#user_simplsharp_library "DSP_Suite"
+
+
+
+/*******************************************************************************************
+  DIGITAL, ANALOG and SERIAL INPUTS and OUTPUTS
+  (Uncomment and declare inputs and outputs as needed)
+*******************************************************************************************/
+ DIGITAL_INPUT Initialize;
+ ANALOG_INPUT _skip_,RouteToOutput[32];
+// STRING_INPUT 
+// BUFFER_INPUT 
+
+// DIGITAL_OUTPUT 
+ ANALOG_OUTPUT _skip_,_skip_,Routed_FB[32];
+// STRING_OUTPUT 
+
+
+/*******************************************************************************************
+  Parameters
+  (Uncomment and declare parameters as needed)
+*******************************************************************************************/
+
+ STRING_PARAMETER _skip_,_skip_,_skip_,_skip_,_skip_,_skip_,_skip_,_skip_,_skip_,_skip_,_skip_,
+				_skip_,_skip_,_skip_,_skip_,_skip_,_skip_,_skip_,_skip_,_skip_,_skip_,_skip_,_skip_,_skip_,
+				_skip_,_skip_,_skip_,_skip_,_skip_,_skip_,_skip_,_skip_,_skip_,_skip_,_skip_,CoreID[20],GroupID[20],ComponentName[50];
+
+
+integer val,outnum,x,inputsDefined,outputsDefined,i;
+
+CameraRouterSIMPL routerControl;
+
+/*******************************************************************************************
+  Event Handlers
+  (Uncomment and declare additional event handlers as needed)
+*******************************************************************************************/
+push initialize
+{
+
+	for(outputsDefined = 32 to 1 step - 1)
+	{
+        IF(IsSignalDefined(Routed_FB[outputsDefined]))
+		break;
+	}
+
+
+	trace("Max inputs is %d",inputsDefined);
+	trace("Max outputs is %d",outputsDefined);
+
+	routerControl.Initialize(componentname,coreid,groupid,outputsdefined);
+}
+
+threadsafe change RouteToOutput
+{
+	x = getlastmodifiedarrayindex();
+    val = RouteToOutput[x];
+	routerControl.RouteInput(val, x);  
+}
+
+callback function RouteChanged(integer route, integer output)
+{
+	integer out ;
+	out = output + 1;
+    Routed_FB[out] = route;
+}
+
+/*******************************************************************************************
+  Main()
+  Uncomment and place one-time startup code here
+  (This code will get called when the system starts up)
+*******************************************************************************************/
+
+Function Main()
+{
+    WaitForInitializationComplete();
+
+	inputsdefined = 0;
+	outputsdefined = 0;
+
+
+    RegisterDelegate(routerControl, onRouterChange, RouteChanged);
+
+}
+
+

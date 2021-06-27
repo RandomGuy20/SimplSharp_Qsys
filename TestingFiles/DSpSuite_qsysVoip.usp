@@ -1,0 +1,305 @@
+/*******************************************************************************************
+  SIMPL+ Module Information
+  (Fill in comments below)
+*******************************************************************************************/
+/*
+Dealer Name:
+System Name:
+System Number:
+Programmer:
+Comments:
+*/
+
+/*******************************************************************************************
+  Compiler Directives
+  (Uncomment and declare compiler directives as needed)
+*******************************************************************************************/
+ #SYMBOL_NAME "QsysVoip_V1"
+ #CATEGORY "46" "DSPSuite" // Cust
+// #PRINT_TO_TRACE
+// #DIGITAL_EXPAND 
+// #ANALOG_SERIAL_EXPAND 
+// #OUTPUT_SHIFT 
+// #HELP_PDF_FILE ""
+#DEFAULT_VOLATILE
+#ENABLE_STACK_CHECKING
+#ENABLE_TRACE
+// #ENCODING_ASCII
+// #ENCODING_UTF16
+// #ENCODING_INHERIT_FROM_PARENT
+// #ENCODING_INHERIT_FROM_PROGRAM
+/*
+#HELP_BEGIN
+   (add additional lines of help lines)
+#HELP_END
+*/
+
+/*******************************************************************************************
+  Include Libraries
+  (Uncomment and include additional libraries as needed)
+*******************************************************************************************/
+#user_simplsharp_library "DSP_Suite"
+/*******************************************************************************************
+  DIGITAL, ANALOG and SERIAL INPUTS and OUTPUTS
+  (Uncomment and declare inputs and outputs as needed)
+*******************************************************************************************/
+ DIGITAL_INPUT Initialize,Dial,Redial,Disconnect,_skip_,_skip_,AutoAnswerOn,AutoAnsweroff,DNDOn,DNDOff,ClearCallHistory,
+               KPDelete,KPClear,KPStar,KPPound,KP[10];
+                
+ ANALOG_INPUT _skip_,RecentCallSelect,AutoAnswerRings;
+// STRING_INPUT 
+// BUFFER_INPUT 
+
+digital_output  _skip_,Dialing_Fb,Ringing_Fb,Connected_Fb,Disconnected_Fb,_skip_,AutoAnswer_Fb,_skip_,DND_Fb;
+ANALOG_OUTPUT _skip_,_skip_,_skip_,_skip_,_skip_,_skip_,_skip_,_skip_,_skip_,_skip_,
+            _skip_,_skip_,_skip_,_skip_,_skip_,_skip_,_skip_,_skip_,AutoAnswerRingFb;
+STRING_OUTPUT CallerIDName,CallerIDNumber,CallStatus,CallConnectTime,DialString,RecenCalls[20];
+
+
+
+/*******************************************************************************************
+  Parameters
+  (Uncomment and declare parameters as needed)
+*******************************************************************************************/
+            
+
+ STRING_PARAMETER _skip_,_skip_,_skip_,_skip_,_skip_,_skip_,_skip_,_skip_,_skip_,_skip_,_skip_,_skip_,_skip_,_skip_,_skip_,_skip_,_skip_,_skip_,_skip_,_skip_,_skip_,
+ _skip_,_skip_,_skip_,_skip_,_skip_,_skip_,_skip_,_skip_,_skip_,_skip_,_skip_,_skip_,_skip_,_skip_,_skip_,_skip_,_skip_,_skip_,_skip_,_skip_,_skip_,_skip_,
+ _skip_,_skip_,_skip_,_skip_,_skip_,_skip_,_skip_,_skip_,_skip_,_skip_,_skip_,CoreID[20],GroupID[20],ComponentName[50];
+
+
+
+ VoipSIMPL voip;
+
+/*******************************************************************************************
+  Global Variables
+  (Uncomment and declare global variables as needed)
+  Note:  Be sure to initialize all declared STRING variables as needed
+         For example, in Function Main: myString = "";
+*******************************************************************************************/
+ INTEGER giKpPress,giAutoAnswer,gidnd,giAnswerAmount;
+string gsCall[20][20];
+/*******************************************************************************************
+  Event Handlers
+  (Uncomment and declare additional event handlers as needed)
+*******************************************************************************************/
+
+push initialize
+{
+	voip.Initialize(componentname,coreid,groupid);
+}
+
+
+RELEASE Dial
+{
+    voip.Connect();
+}
+
+RELEASE Redial
+{
+    voip.Redial();
+}
+
+release ClearCallHistory
+{
+  voip.ClearRecentCalls();
+}
+
+
+RELEASE Disconnect
+{
+    voip.Disconnect();
+}
+
+RELEASE AutoAnswerOn
+{
+    voip.AutoAnswer(1);
+}
+
+RELEASE AutoAnsweroff
+{
+  voip.AutoAnswer(0);
+}
+
+RELEASE DNDOn
+{
+    voip.DND(1);
+}
+
+RELEASE DNDOff
+{
+  voip.DND(0);
+}
+
+
+RELEASE KPDelete
+{
+    voip.KPDelete();
+}
+
+RELEASE KPClear
+{
+  voip.KpClear();
+}
+
+RELEASE KPStar
+{
+    voip.KPButton("*");
+}
+
+
+RELEASE KPPound
+{
+  voip.KPButton("#");
+}
+
+
+RELEASE KP
+{
+    integer x;
+    x = GetLastModifiedArrayIndex();
+    voip.KPButton(itoa(x - 1));
+}
+
+
+CHANGE RecentCallSelect
+{
+  integer x;
+  x = RecentCallSelect;
+    voip.RecentCall(x);
+}
+
+change AutoAnswerRings
+{
+  integer x;
+  x = AutoAnswerRings;
+  voip.SetAutoAnswerRings(x);
+}
+
+
+    
+callback function AutoAnswerChanged(integer args)
+{
+    giAutoAnswer = args;
+    AutoAnswer_Fb = giAutoAnswer;
+}
+
+callback function DNDStatusChanged(integer args)
+{
+  gidnd = args;
+  DND_Fb = gidnd;
+}
+
+callback function AutoAnswerAmount(integer args)
+{
+  giAnswerAmount = args;
+  AutoAnswerRingFb = giAnswerAmount;
+}
+
+    
+callback function CallerIdNameChange(string args)
+{
+  CallerIDName = args;
+}
+
+callback function CalleridNumberChange(string args)
+{
+  CallerIDNumber = args;
+}
+
+callback function CallStateChange(integer args)
+{
+  switch(args)
+  {
+    case (1):
+    {
+      Dialing_Fb = 0;
+      Ringing_Fb = 0;
+      Connected_Fb = 1; 
+      Disconnected_Fb =0; 
+    }
+    case (2):
+    {
+      Dialing_Fb = 0;
+      Ringing_Fb = 0;
+      Connected_Fb = 0; 
+      Disconnected_Fb = 1; 
+    }
+    case (3):
+    {
+      Dialing_Fb = 1;
+      Ringing_Fb = 0;
+      Connected_Fb = 0; 
+      Disconnected_Fb =0; 
+    }
+    case (4):
+    {
+      Dialing_Fb = 0;
+      Ringing_Fb = 1;
+      Connected_Fb = 0; 
+      Disconnected_Fb =0; 
+    }
+    default:
+    {
+      
+    }
+  }
+}
+
+callback function DialStringChange(string args)
+{
+  DialString = args;
+}
+
+callback function CallDurationChange(string args)
+{
+  CallConnectTime = args;
+}
+
+callback function CallStatusChange(string args)
+{
+  CallStatus = args;
+}
+
+callback function RecentCallChange(string args, integer pos)
+{
+  integer i;
+
+  gsCall[pos] = args;
+  
+  if(pos = 19)
+  {
+      for(i = 0 to 19)
+      {
+        RecenCalls[i + 1] = gsCall[i];
+       
+      }
+  }
+}
+
+/*******************************************************************************************
+  Main()
+  Uncomment and place one-time startup code here
+  (This code will get called when the system starts up)
+*******************************************************************************************/
+
+Function Main()
+{
+    WaitForInitializationComplete();
+
+    RegisterDelegate(voip, onAutoAnswerStatus, AutoAnswerChanged);
+    RegisterDelegate(voip, onDNDStatus, DNDStatusChanged);
+    RegisterDelegate(voip, onAutoAnswerAmount, AutoAnswerAmount);
+    RegisterDelegate(voip, onCallerIdNumber, CalleridNumberChange);
+    RegisterDelegate(voip, onCallerIdName, CallerIdNameChange);
+    RegisterDelegate(voip, onDialString, DialStringChange);
+    RegisterDelegate(voip, onCallState, CallStateChange);
+    RegisterDelegate(voip, onCallDuration, CallDurationChange);
+    RegisterDelegate(voip, onCallStatus, CallStatusChange);
+    RegisterDelegate(voip, onRecentCallList, RecentCallChange);
+    
+    delay(10);
+}
+
+
+

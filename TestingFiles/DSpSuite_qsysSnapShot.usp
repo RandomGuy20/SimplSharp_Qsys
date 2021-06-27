@@ -1,0 +1,128 @@
+/*******************************************************************************************
+  SIMPL+ Module Information
+  (Fill in comments below)
+*******************************************************************************************/
+/*
+Dealer Name:
+System Name:
+System Number:
+Programmer:
+Comments:
+*/
+
+/*******************************************************************************************
+  Compiler Directives
+  (Uncomment and declare compiler directives as needed)
+*******************************************************************************************/
+ #SYMBOL_NAME "QsysSnapShot_V1"
+ #CATEGORY "46" "DSPSuite" // Cust
+// #PRINT_TO_TRACE
+// #DIGITAL_EXPAND 
+// #ANALOG_SERIAL_EXPAND 
+// #OUTPUT_SHIFT 
+// #HELP_PDF_FILE ""
+#DEFAULT_VOLATILE
+#ENABLE_STACK_CHECKING
+#ENABLE_TRACE
+// #ENCODING_ASCII
+// #ENCODING_UTF16
+// #ENCODING_INHERIT_FROM_PARENT
+// #ENCODING_INHERIT_FROM_PROGRAM
+/*
+#HELP_BEGIN
+   (add additional lines of help lines)
+#HELP_END
+*/
+
+/*******************************************************************************************
+  Include Libraries
+  (Uncomment and include additional libraries as needed)
+*******************************************************************************************/
+#user_simplsharp_library "DSP_Suite"
+/*******************************************************************************************
+  DIGITAL, ANALOG and SERIAL INPUTS and OUTPUTS
+  (Uncomment and declare inputs and outputs as needed)
+*******************************************************************************************/
+ DIGITAL_INPUT initialize,RecallSnapShot,SaveSnapShot;
+ ANALOG_INPUT SnapShotNumber;
+// STRING_INPUT 
+// BUFFER_INPUT 
+
+ ANALOG_OUTPUT ActiveSnapShot_Fb;
+// STRING_OUTPUT 
+
+/*******************************************************************************************
+  SOCKETS
+  (Uncomment and define socket definitions as needed)
+*******************************************************************************************/
+// TCP_CLIENT
+// TCP_SERVER
+// UDP_SOCKET
+
+/*******************************************************************************************
+  Parameters
+  (Uncomment and declare parameters as needed)
+*******************************************************************************************/
+
+ STRING_PARAMETER  _skip_,_skip_,_skip_,_skip_,CoreID[20],GroupID[20],ComponentName[50];
+
+SnapShotSIMPL snap;
+
+
+ INTEGER giSetRecallval;
+
+/*******************************************************************************************
+  Event Handlers
+  (Uncomment and declare additional event handlers as needed)
+*******************************************************************************************/
+
+push initialize
+{
+	snap.Initialize(componentname,coreid,groupid);
+}
+
+PUSH RecallSnapShot
+{
+    if(giSetRecallval > 0 )
+    {
+        snap.RecallSnap(gisetrecallval);
+    }
+}
+
+push SaveSnapShot
+{
+    if(giSetRecallval > 0 )
+    {
+        snap.SetSnap(gisetrecallval);
+    }
+}
+
+
+
+threadsafe CHANGE SnapShotNumber
+{
+    giSetRecallval = SnapShotNumber;
+}
+
+
+callback function SnapShotChange(integer args)
+{
+    ActiveSnapShot_Fb = args;
+}
+
+
+/*******************************************************************************************
+  Main()
+  Uncomment and place one-time startup code here
+  (This code will get called when the system starts up)
+*******************************************************************************************/
+
+Function Main()
+{
+    WaitForInitializationComplete();
+
+   RegisterDelegate(snap, onActiveSnapShot, SnapShotChange);
+   
+}
+
+

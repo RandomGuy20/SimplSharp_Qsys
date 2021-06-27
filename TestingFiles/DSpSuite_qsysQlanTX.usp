@@ -1,0 +1,134 @@
+/*******************************************************************************************
+  SIMPL+ Module Information
+  (Fill in comments below)
+*******************************************************************************************/
+/*
+Dealer Name:
+System Name:
+System Number:
+Programmer:
+Comments:
+*/
+
+/*******************************************************************************************
+  Compiler Directives
+  (Uncomment and declare compiler directives as needed)
+*******************************************************************************************/
+ #SYMBOL_NAME "QsysQlanTX_V1"
+ #CATEGORY "46" "DSPSuite" // Cust
+
+
+// #PRINT_TO_TRACE
+// #DIGITAL_EXPAND 
+// #ANALOG_SERIAL_EXPAND 
+// #OUTPUT_SHIFT 
+// #HELP_PDF_FILE ""
+#DEFAULT_VOLATILE
+#ENABLE_STACK_CHECKING
+#ENABLE_TRACE
+// #ENCODING_ASCII
+// #ENCODING_UTF16
+// #ENCODING_INHERIT_FROM_PARENT
+// #ENCODING_INHERIT_FROM_PROGRAM
+/*
+#HELP_BEGIN
+   Can do up to 10 Outputs and 10 inputs
+#HELP_END
+*/
+
+/*******************************************************************************************
+  Include Libraries
+  (Uncomment and include additional libraries as needed)
+*******************************************************************************************/
+#user_simplsharp_library "DSP_Suite"
+
+
+/*******************************************************************************************
+  DIGITAL, ANALOG and SERIAL INPUTS and OUTPUTS
+  (Uncomment and declare inputs and outputs as needed)
+*******************************************************************************************/
+
+digital_input Initialize,_skip_,Enable;
+digital_output _skip_,_skip_,Enabled_Fb,BlockActiveFB,StreamIsActiveFB;
+
+string_input _skip_,_skip_,SetStreamName[50];
+string_output StreamNameFb;
+
+
+QlanSIMPL stream;
+/*******************************************************************************************
+  Parameters
+  (Uncomment and declare parameters as needed)
+*******************************************************************************************/
+             
+ STRING_PARAMETER _skip_,_skip_,_skip_,_skip_,
+					_skip_,_skip_,_skip_,CoreID[20],GroupID[20],ComponentName[50];
+
+ integer giType;
+ string gsStream[50],gsName[50];
+
+
+/*******************************************************************************************
+  Event Handlers
+  (Uncomment and declare additional event handlers as needed)
+*******************************************************************************************/
+       
+push initialize
+{
+ 	stream.Initialize(componentname,coreid,groupid,0);
+}
+
+push Enable
+{
+    stream.EnableBlock();
+}
+
+threadsafe change SetStreamName
+{
+    gsStream = SetStreamName;
+    stream.SetStreamName(gsStream);
+    gsStream = "";
+}
+
+callback function Enabledtrig(integer args)
+{
+    Enabled_Fb = args;
+}
+
+callback function Activetrig(integer args)
+{
+    BlockActiveFB = args;
+}
+
+callback function Streamtrig(integer args)
+{
+    StreamIsActiveFB = args;
+}
+
+callback function NameChangeTrig(string args)
+{
+    gsName = args;
+    StreamNameFb = gsName;
+}
+
+
+
+/*******************************************************************************************
+  Main()
+  Uncomment and place one-time startup code here
+  (This code will get called when the system starts up)
+*******************************************************************************************/
+
+Function Main()
+{
+    WaitForInitializationComplete();
+
+
+    RegisterDelegate(stream, onEnabled, Enabledtrig);
+    RegisterDelegate(stream, onBlockActive, Activetrig);
+    RegisterDelegate(stream, onStreamActive, Streamtrig);
+    RegisterDelegate(stream, onStreamNameChange, NameChangeTrig);
+    
+}
+
+

@@ -1,0 +1,273 @@
+/*******************************************************************************************
+  SIMPL+ Module Information
+  (Fill in comments below)
+*******************************************************************************************/
+/*
+Dealer Name:
+System Name:
+System Number:
+Programmer:
+Comments:
+*/
+
+/*******************************************************************************************
+  Compiler Directives
+  (Uncomment and declare compiler directives as needed)
+*******************************************************************************************/
+// #ENABLE_DYNAMIC
+ #SYMBOL_NAME "QsysCamControl_V1"
+ #CATEGORY "46" "DSPSuite" // Cust
+// #PRINT_TO_TRACE
+// #DIGITAL_EXPAND 
+// #ANALOG_SERIAL_EXPAND 
+// #OUTPUT_SHIFT 
+// #HELP_PDF_FILE ""
+#DEFAULT_VOLATILE
+#ENABLE_STACK_CHECKING
+#ENABLE_TRACE
+// #ENCODING_ASCII
+// #ENCODING_UTF16
+// #ENCODING_INHERIT_FROM_PARENT
+// #ENCODING_INHERIT_FROM_PROGRAM
+/*
+#HELP_BEGIN
+   (add additional lines of help lines)
+#HELP_END
+*/
+
+/*******************************************************************************************
+  Include Libraries
+  (Uncomment and include additional libraries as needed)
+*******************************************************************************************/
+#user_simplsharp_library "DSP_Suite"
+
+/*******************************************************************************************
+  DIGITAL, ANALOG and SERIAL INPUTS and OUTPUTS
+  (Uncomment and declare inputs and outputs as needed)
+*******************************************************************************************/
+ DIGITAL_INPUT Initialize,_skip_, Move_Up,Move_Right,Move_Down,Move_Left,ZoomIn,ZoomOut,FocusIn,FocusOut,Privacy,Home,SaveHome;
+
+ DIGITAL_OUTPUT _skip_,IsUp,IsRight,IsDown,IsLeft,IsZoomIn,IsZoomOut,isFocusIn,IsFocusOut,Privacy_Fb,Home_FB,SaveHomePulse,CameraisStreaming;
+ STRING_OUTPUT _skip_,CamURl;
+
+
+/*******************************************************************************************
+  Parameters
+  (Uncomment and declare parameters as needed)
+*******************************************************************************************/
+INTEGER_PARAMETER _skip_,_skip_,_skip_,_skip_,_skip_,_skip_,_skip_,_skip_,_skip_,_skip_,_skip_,_skip_,_skip_,_skip_,_skip_;
+ STRING_PARAMETER CoreID[20],GroupID[20],ComponentName[50];
+
+CameraControlSIMPL cam;
+
+/*******************************************************************************************
+  Global Variables
+  (Uncomment and declare global variables as needed)
+  Note:  Be sure to initialize all declared STRING variables as needed
+         For example, in Function Main: myString = "";
+*******************************************************************************************/
+
+/*******************************************************************************************
+  Event Handlers
+  (Uncomment and declare additional event handlers as needed)
+*******************************************************************************************/
+
+push initialize
+{
+ 	cam.Initialize(ComponentName,coreid,groupID);
+}
+
+push Move_Up
+{
+    cam.MoveCamera(3,1);
+}
+
+release Move_Up
+{
+    cam.MoveCamera(3,0);
+}
+
+push Move_Down
+{
+    cam.MoveCamera(4,1);
+}
+
+release Move_Down
+{
+    cam.MoveCamera(4,0);
+}
+
+push Move_Right
+{
+    cam.MoveCamera(8,1);
+}
+
+release Move_Right
+{
+    cam.MoveCamera(8,0);
+}
+
+push Move_Left
+{
+    cam.MoveCamera(9,1);
+}
+
+release Move_Left
+{
+    cam.MoveCamera(9,0);
+}
+
+push ZoomIn
+{
+    cam.MoveCamera(1,1);
+}
+
+release ZoomIn
+{
+    cam.MoveCamera(1,0);
+}
+
+push ZoomOut
+{
+    cam.MoveCamera(2,1);
+}
+
+release ZoomOut
+{
+    cam.MoveCamera(2,0);
+}
+
+push FocusIn  
+{
+    cam.MoveCamera(10,1);
+}  
+release FocusIn
+{
+    cam.MoveCamera(10,0);
+} 
+
+push FocusOut
+{
+    cam.MoveCamera(11,1);
+}
+
+release FocusOut
+{
+    cam.MoveCamera(11,0);
+}
+
+release Privacy
+{
+    cam.Privacy();
+}
+
+release Home
+{
+    cam.Home();
+}
+
+release SaveHome
+{
+    cam.SaveHome();
+}
+
+callback function CameraURlChange(string args)
+{
+    CamURl = args;
+}
+
+callback function ZoomChange(integer dir, integer val)
+{
+    if(dir = 1)
+    {
+       isZoomOut = val;
+    }
+    else
+    {
+        isZoomIn = val;
+    }
+}
+    callback function VerticalChange(integer dir, integer val)
+    {
+        if(dir = 6)
+        {
+            IsUp = val;
+        }
+        else
+        {
+            IsDown = val;
+        }
+    }
+
+    callback function PrivacyChange(integer args)
+    {
+        Privacy_Fb = args;
+    }
+
+    callback function onHomeRecalled(integer args)
+    {
+        Home_FB = args;
+    }
+    callback function HomeSaved(integer args)
+    {
+        pulse(10, SaveHomePulse);
+        
+    }
+
+    callback function HorizontalChange(integer dir, integer val)
+    {
+        if(dir = 4)
+        {
+           IsLeft = val;
+        }
+        else
+        {
+            IsRight = val;
+        }
+    }
+
+    callback function FocusChange(integer  dir, integer val)
+    {
+        if(dir = 2)
+        {
+            isFocusIn = val;
+        }
+        else
+        {
+            isFocusOut = val;
+        }
+    }
+
+    callback function StreamChange(integer args)
+    {
+        CameraisStreaming = args;
+    }
+    
+/*******************************************************************************************
+  Main()
+  Uncomment and place one-time startup code here
+  (This code will get called when the system starts up)
+
+  ,IsRight,,IsLeft,,isFocusIn,IsFocusOut 
+*******************************************************************************************/
+
+Function Main()
+{
+    WaitForInitializationComplete();
+    RegisterDelegate(cam, onCameraURL, CameraURlChange);
+    RegisterDelegate(cam, onZoom, ZoomChange);
+    RegisterDelegate(cam, onVerticalMovement, VerticalChange);
+    RegisterDelegate(cam, onPrivacy, PrivacyChange);
+    RegisterDelegate(cam, onHomeRecalled, onHomeRecalled);
+    RegisterDelegate(cam, onHomeSave, HomeSaved);
+    RegisterDelegate(cam, onHorizontalMovement, HorizontalChange);
+    RegisterDelegate(cam, onFocus, FocusChange);
+    RegisterDelegate(cam, onStream, StreamChange);
+    
+
+    
+
+    delay(10);
+}
+
+

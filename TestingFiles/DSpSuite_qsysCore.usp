@@ -1,0 +1,147 @@
+/*******************************************************************************************
+  SIMPL+ Module Information
+  (Fill in comments below)
+*******************************************************************************************/
+/*
+Dealer Name: 
+System Name:
+System Number:
+Programmer: Josh
+Comments: My TAke on Qsys Controls For Simpl#
+*/
+
+/*******************************************************************************************
+  Compiler Directives
+  (Uncomment and declare compiler directives as needed)
+*******************************************************************************************/
+// #ENABLE_DYNAMIC
+ #SYMBOL_NAME "QsysCore_V1"
+ #CATEGORY "46" "DSPSuite" // Custom
+
+// #HINT ""
+// #DEFINE_CONSTANT
+ #PRINT_TO_TRACE
+#DEFAULT_VOLATILE
+#ENABLE_STACK_CHECKING
+#ENABLE_TRACE
+// #ENCODING_ASCII
+// #ENCODING_UTF16
+// #ENCODING_INHERIT_FROM_PARENT
+// #ENCODING_INHERIT_FROM_PROGRAM
+/*
+#HELP_BEGIN
+   (add additional lines of help lines)
+#HELP_END
+*/
+
+/*******************************************************************************************
+  Include Libraries
+  (Uncomment and include additional libraries as needed)
+*******************************************************************************************/
+
+ 
+#user_simplsharp_library "DSP_Suite" 
+
+
+/*******************************************************************************************
+  DIGITAL, ANALOG and SERIAL INPUTS and OUTPUTS
+  (Uncomment and declare inputs and outputs as needed)
+*******************************************************************************************/
+DIGITAL_INPUT Initialize,Debug;
+ 
+
+ DIGITAL_OUTPUT Initialized_FB,Connected_FB, Redundant_FB, Emulator_Fb, Active_Fb;
+ STRING_OUTPUT DesignName_FB,Platform_Fb;
+
+/*******************************************************************************************
+  Parameters
+  (Uncomment and declare parameters as needed)
+*******************************************************************************************/
+ INTEGER_PARAMETER _skip_,_skip_,_skip_,_skip_,_skip_,_skip_,_skip_;
+ STRING_PARAMETER IpAddress[16],ID[3];
+
+ INTEGER startDelay,Port, counter;
+// LONG_INTEGER
+// SIGNED_INTEGER
+// SIGNED_LONG_INTEGER
+ STRING gsDesign[20], gsPlatform[20];
+
+ProcessorSIMPL core;
+
+/*******************************************************************************************
+  Event Handlers
+  (Uncomment and declare additional event handlers as needed)
+*******************************************************************************************/
+
+PUSH initialize
+{
+    while(startDelay != 1)
+	{}
+	core.Initialize(IpAddress,id);
+}
+
+
+push Debug
+{
+    core.setDebug(1);
+}
+
+release debug
+{
+    core.setDebug(0);
+}
+
+
+
+callback function NewOnConnected(integer value)
+{
+    Connected_FB = value;
+}
+
+callback function NewOnRegistered(integer value)
+{
+	Initialized_FB = value;
+}
+
+
+callback function NewOnCoreStatus(string dName, string platform, integer emulator, integer redundant, integer active)
+{
+  signed_integer result;
+
+	gsDesign = dname;
+	gsplatform = platform;
+  trace("DesignName is: %s and Platform is: %s",gsdesign,gsplatform);
+
+ 
+  
+  	DesignName_FB = gsdesign;
+  	Platform_Fb = gsplatform;
+	Redundant_FB = redundant ;
+	Emulator_Fb = emulator; 
+	Active_Fb = active;
+}
+
+
+
+/*******************************************************************************************
+  Main()
+  Uncomment and place one-time startup code here
+  (This code will get called when the system starts up)
+*******************************************************************************************/
+
+Function Main()
+{
+    startDelay = 0;
+
+RegisterDelegate(core,CoreIsConnected,NewOnConnected);
+RegisterDelegate(core,CoreIsInitialized,NewOnRegistered);
+RegisterDelegate(core,CoreIsUpdated,NewOnCoreStatus);
+
+     WaitForInitializationComplete();
+  gsdesign = "";
+  gsplatform = "";
+    startDelay = 1;
+    counter = 0;
+}
+
+
