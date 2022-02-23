@@ -3,26 +3,24 @@
   (Fill in comments below)
 *******************************************************************************************/
 /*
-Dealer Name:
+Dealer Name: 
 System Name:
 System Number:
-Programmer:
-Comments:
+Programmer: Josh
+Comments: My TAke on Qsys Controls For Simpl#
 */
 
 /*******************************************************************************************
   Compiler Directives
   (Uncomment and declare compiler directives as needed)
 *******************************************************************************************/
- #SYMBOL_NAME "QsysCamRouter_V1"
- #CATEGORY "46" "DSPSuite" // Cust
+// #ENABLE_DYNAMIC
+ #SYMBOL_NAME "QsysGain_V1"
+ #CATEGORY "46" "DSPSuite" // Custom
 
-// #PRINT_TO_TRACE
-// #DIGITAL_EXPAND 
-#ANALOG_SERIAL_EXPAND InputsWithOutputs
-
-// #OUTPUT_SHIFT 
-// #HELP_PDF_FILE ""
+// #HINT ""
+// #DEFINE_CONSTANT
+ #PRINT_TO_TRACE
 #DEFAULT_VOLATILE
 #ENABLE_STACK_CHECKING
 #ENABLE_TRACE
@@ -30,80 +28,124 @@ Comments:
 // #ENCODING_UTF16
 // #ENCODING_INHERIT_FROM_PARENT
 // #ENCODING_INHERIT_FROM_PROGRAM
-
+/*
 #HELP_BEGIN
-   This can be exapnded for up to 32 outputs/inputs
+   Each Group Can Handle 9 Gain Blocks reliably, if you go above that, you need to add a new gain group in the parameters
 #HELP_END
+*/
 
 /*******************************************************************************************
   Include Libraries
   (Uncomment and include additional libraries as needed)
 *******************************************************************************************/
-#user_simplsharp_library "DSP_Suite"
 
-
+#user_simplsharp_library "DSP_Suite" 
 
 /*******************************************************************************************
   DIGITAL, ANALOG and SERIAL INPUTS and OUTPUTS
   (Uncomment and declare inputs and outputs as needed)
 *******************************************************************************************/
- DIGITAL_INPUT Initialize;
- ANALOG_INPUT _skip_,RouteToOutput[32];
-// STRING_INPUT 
-// BUFFER_INPUT 
+DIGITAL_INPUT Initialize,_skip_,_skip_,_skip_,_skip_,MuteON,MuteOff,MuteToggle;
+analog_input _skip_,Volume;
+ 
 
-// DIGITAL_OUTPUT 
- ANALOG_OUTPUT _skip_,_skip_,Routed_FB[32];
-// STRING_OUTPUT 
-
+ DIGITAL_OUTPUT _skip_,_skip_,VolumeIsRaising, VolumeIsLowering,_skip_,Mute_FB,NotMute_FB;
+analog_output _skip_,_skip_,Volume_FB;
+ STRING_OUTPUT Volume_String;
 
 /*******************************************************************************************
   Parameters
   (Uncomment and declare parameters as needed)
 *******************************************************************************************/
-
- STRING_PARAMETER _skip_,_skip_,_skip_,_skip_,_skip_,_skip_,_skip_,_skip_,_skip_,_skip_,_skip_,
-				_skip_,_skip_,_skip_,_skip_,_skip_,_skip_,_skip_,_skip_,_skip_,_skip_,_skip_,_skip_,_skip_,
-				_skip_,_skip_,_skip_,_skip_,_skip_,_skip_,_skip_,_skip_,_skip_,_skip_,_skip_,CoreID[20],GroupID[20],ComponentName[50];
+STRING_PARAMETER  _skip_,_skip_,_skip_,_skip_,_skip_,_skip_,_skip_,_skip_,_skip_,_skip_,_skip_,ComponentName[20],GroupID[20],CoreID[20];
 
 
-integer val,outnum,x,inputsDefined,outputsDefined,i;
 
-CameraRouterSIMPL routerControl;
+ INTEGER currVolume, dir,cheval,repeatTime;
+ STRING compName[20];
+
+GainSIMPL gainBlock;
+
 
 /*******************************************************************************************
   Event Handlers
   (Uncomment and declare additional event handlers as needed)
 *******************************************************************************************/
-push initialize
-{
+ 
 
-	for(outputsDefined = 32 to 1 step - 1)
-	{
-        IF(IsSignalDefined(Routed_FB[outputsDefined]))
-		    break;
+push Initialize
+{
+	gainBlock.Initialize(componentName,coreid,GroupID);
+}
+
+
+PUSH muteon
+{
+     gainBlock.NewMute(1);
+}
+PUSH muteoff
+{
+    gainBlock.NewMute(0);
+}
+PUSH mutetoggle
+{
+   if(Mute_FB = 1)
+   {
+     	gainBlock.NewMute(0);
+		
 	}
-
-
-	trace("Max inputs is %d",inputsDefined);
-	trace("Max outputs is %d",outputsDefined);
-
-	routerControl.Initialize(componentname,coreid,groupid,outputsdefined);
+	else
+	{
+       gainBlock.NewMute(1);
+	}
 }
 
-threadsafe change RouteToOutput
+threadsafe change volume
 {
-	x = getlastmodifiedarrayindex();
-    val = RouteToOutput[x];
-	routerControl.RouteInput(val, x);  
+	integer val;
+	if(volume = 0)
+	{
+     	gainBlock.NewVolume(0);
+	}
+	else	
+	{
+     	while(val != volume)
+		{
+         	val = volume;
+	  		gainBlock.NewVolume(val);
+		}
+	}
 }
 
-callback function RouteChanged(integer route, integer output)
+callback function NewVolumeChange(integer value)
 {
-	integer out ;
-	out = output + 1;
-    Routed_FB[out] = route;
+	currVolume = value;
+    Volume_FB = currVolume;
+	Volume_String = itoa(currvolume);
 }
+
+callback function NewMuteChange(integer value)
+{
+	if(value = 1)
+	{
+		Mute_FB = 1;
+		NotMute_FB = 0;
+	}
+	else
+	{
+		Mute_FB = 0;
+		NotMute_FB = 1;
+	}
+}
+
+
+callback function NewVolumeAdjusting(integer up, integer down)
+{
+    VolumeIsRaising = up; 
+	VolumeIsLowering = down;
+}
+
+
 
 /*******************************************************************************************
   Main()
@@ -113,14 +155,17 @@ callback function RouteChanged(integer route, integer output)
 
 Function Main()
 {
+
+    repeatTime = 10;
+    compName = componentName;
+
+	RegisterDelegate(gainBlock,VolumeChange,NewVolumeChange);
+	RegisterDelegate(gainBlock,MuteChange,NewMuteChange);
+	//RegisterDelegate(gainBlock,VolumeAdjusting,NewVolumeAdjusting);
+
     WaitForInitializationComplete();
-
-	inputsdefined = 0;
-	outputsdefined = 0;
-
-
-    RegisterDelegate(routerControl, onRouterChange, RouteChanged);
-
+    mute_fb = 0;         
+	delay(20);
 }
 
 
